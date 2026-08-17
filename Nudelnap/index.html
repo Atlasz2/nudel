@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>NUDEL-AKTA · Nudelenciklopédia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Caveat:wght@500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+<style>
+/* ==========================================================
+   NUDELENCIKLOPÉDIA — Stílusok
+   ==========================================================
+   Szerkeszthető változók:
+   --paper       : papír háttérszín
+   --kraft       : boríték szín
+   --stamp-red   : pecsét / kiemelés szín
+   ========================================================== */
+
+:root {
+  --paper: #f2e9d4;
+  --paper-dark: #c8b686;
+  --kraft: #b99b6b;
+  --kraft-dark: #8f7449;
+  --ink: #231e1a;
+  --ink-soft: #4a4038;
+  --stamp-red: #a3272b;
+  --stamp-red-dark: #7c1c1f;
+}
+
+/* --- Reset & alap --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; touch-action: manipulation; }
+body {
+  font-family: 'Lora', serif;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  background-color: #3a2e22;
+  background-image:
+    repeating-linear-gradient(92deg, rgba(255,255,255,.012) 0px, transparent 1px, transparent 4px),
+    repeating-linear-gradient(92deg, rgba(0,0,0,.03) 0px, transparent 2px, transparent 8px),
+    linear-gradient(180deg, #3a2e22 0%, #2e2318 50%, #3a2e22 100%);
+}
+.sf   { font-family: 'Special Elite', monospace; letter-spacing: .5px; }
+.hand { font-family: 'Caveat', cursive; }
+
+/* --- Asztal --- */
+#desk { position: relative; width: 100%; height: 100%; overflow: hidden; background: #3a2e22; }
+
+/* --- Nap-számláló (fent, középen) --- */
+#dayCounter {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 46;
+  background: var(--paper); padding: 5px 14px; border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  font-family: 'Caveat', cursive; font-size: 16px; color: var(--stamp-red-dark);
+  white-space: nowrap;
+}
+
+/* ==========================================================
+   ASZTALI TÁRGYAK (SVG ikonok)
+   — Mindegyik alatt egy rejtett rejtvény-cetli van.
+   ========================================================== */
+.prop-coffee { position: absolute; top: 10px;  right: 12px; z-index: 45; cursor: pointer; filter: drop-shadow(0 4px 6px rgba(0,0,0,.45)); }
+.prop-pen    { position: absolute; bottom: 48px; right: 16px; z-index: 45; cursor: pointer; filter: drop-shadow(0 3px 5px rgba(0,0,0,.35)); transform: rotate(25deg); }
+.prop-clip   { position: absolute; top: 54px;  left: 10px;  z-index: 45; cursor: pointer; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.prop-stamp  { position: absolute; bottom: 48px; left: 14px;  z-index: 45; cursor: pointer; filter: drop-shadow(0 4px 6px rgba(0,0,0,.4)); }
+
+/* ==========================================================
+   REJTETT REJTVÉNY-CETLIK
+   — Koppintásra kicsúsznak a tárgy alól
+   ========================================================== */
+.clue-scrap {
+  position: absolute; z-index: 44;
+  width: min(62vw, 230px);
+  background: var(--paper); border-radius: 2px;
+  box-shadow: 0 10px 22px rgba(0,0,0,.5);
+  padding: 11px 13px 10px;
+  transform: scale(.3) rotate(4deg); opacity: 0;
+  transition: transform .45s cubic-bezier(.2,.8,.3,1.1), opacity .35s;
+  pointer-events: none;
+}
+.clue-scrap.visible {
+  transform: scale(1) rotate(var(--cr, -2deg));
+  opacity: 1; pointer-events: auto;
+}
+.clue-scrap::before {
+  content: ""; position: absolute; top: -6px; left: 22%;
+  width: 40px; height: 12px;
+  background: rgba(230,224,200,.6); transform: rotate(-3deg);
+  box-shadow: 0 1px 2px rgba(0,0,0,.12);
+}
+.clue-scrap .clue-station { font-family: 'Special Elite', monospace; font-size: 9px; color: var(--stamp-red); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+.clue-scrap .clue-text    { font-family: 'Caveat', cursive; font-size: 17px; line-height: 1.3; color: var(--ink); margin-bottom: 6px; }
+.clue-scrap .clue-riddle   { font-family: 'Special Elite', monospace; font-size: 10px; color: var(--ink-soft); line-height: 1.4; border-top: 1px dashed var(--paper-dark); padding-top: 6px; }
+
+/* ==========================================================
+   DOBOZ (lakat, fedél, alap)
+   ========================================================== */
+#box {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -52%);
+  width: 70vw; max-width: 260px; z-index: 20;
+}
+#boxBase {
+  width: 100%; aspect-ratio: 5/3.5; border-radius: 4px;
+  background: linear-gradient(160deg, #6b532e, #4a3820);
+  box-shadow: 0 20px 40px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.08);
+  position: relative;
+}
+#boxBase .stencil {
+  position: absolute; bottom: 10px; left: 0; right: 0; text-align: center;
+  font-family: 'Special Elite', monospace; font-size: 9px;
+  letter-spacing: 2px; color: rgba(255,255,255,.25);
+}
+#boxBase .corner { position: absolute; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,.3); }
+#boxBase .corner.tl { top: 6px; left: 6px; border-right: none; border-bottom: none; }
+#boxBase .corner.tr { top: 6px; right: 6px; border-left: none; border-bottom: none; }
+
+#boxLid {
+  position: absolute; bottom: 96%; left: -3%; right: -3%; height: 30px;
+  background: linear-gradient(160deg, #8a6a3e, #6b532e);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,.3);
+  transition: transform .5s cubic-bezier(.4,.1,.3,1), opacity .5s;
+}
+#boxLid.open { transform: translateY(-70px) rotate(-10deg); opacity: 0; pointer-events: none; }
+
+/* Lakat */
+#lockHasp {
+  position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 40px; z-index: 15;
+  transition: transform .4s cubic-bezier(.3,.8,.3,1.1), opacity .4s;
+}
+#lockHasp.off { transform: translateX(-50%) translateY(-30px) rotate(30deg); opacity: 0; pointer-events: none; }
+.hasp-loop { width: 18px; height: 16px; border: 3px solid #c8a44a; border-bottom: none; border-radius: 6px 6px 0 0; margin: 0 auto; }
+.hasp-body {
+  width: 36px; height: 24px; border-radius: 3px; margin-top: 16px;
+  background: radial-gradient(circle at 35% 30%, #c8a44a, #8a6a30);
+  box-shadow: 0 4px 8px rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Special Elite', monospace; font-size: 8px; color: #3a2510;
+}
+
+/* ==========================================================
+   KÓD-PANEL (a doboz fölött jelenik meg)
+   ========================================================== */
+#codePanel {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(20,16,12,.92); border-radius: 8px; padding: 16px;
+  z-index: 25; text-align: center;
+  box-shadow: 0 14px 30px rgba(0,0,0,.5);
+  transition: opacity .3s, visibility .3s, transform .3s;
+}
+#codePanel.hidden { opacity: 0; visibility: hidden; pointer-events: none; transform: translate(-50%, -50%) scale(.8); }
+/* Háttérfal: blokkolja a kattintásokat, amíg a kódpanel nyitva van */
+#codeBackdrop {
+  position: absolute; inset: 0; z-index: 24;
+  background: rgba(0,0,0,.3);
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .3s, visibility .3s;
+}
+#codeBackdrop.show { opacity: 1; visibility: visible; pointer-events: auto; }
+.code-title { font-family: 'Special Elite', monospace; font-size: 10px; color: #a89a82; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.digits { display: flex; gap: 8px; justify-content: center; margin-bottom: 10px; }
+.digits input {
+  width: 32px; height: 40px; border-radius: 5px;
+  border: 2px solid #6b5a42; background: #15110d;
+  color: var(--paper); font-family: 'Special Elite', monospace;
+  font-size: 20px; text-align: center;
+}
+.digits input:focus { outline: none; border-color: var(--stamp-red); }
+.digits.err input { border-color: var(--stamp-red); animation: shake .4s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.unlock-btn {
+  font-family: 'Special Elite', monospace; background: var(--stamp-red);
+  color: var(--paper); border: none; padding: 9px 20px;
+  font-size: 12px; letter-spacing: 1px; border-radius: 3px; text-transform: uppercase;
+}
+.code-error { height: 14px; color: #e07a7c; font-family: 'Special Elite', monospace; font-size: 9px; margin-top: 8px; }
+
+/* ==========================================================
+   LEVÉL (a dobozban, fedél kinyitása után jelenik meg)
+   ========================================================== */
+#letter {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-2deg) scale(.65);
+  width: 78vw; max-width: 300px;
+  background: var(--paper); border-radius: 3px;
+  box-shadow: 0 16px 30px rgba(0,0,0,.5);
+  padding: 18px 16px 16px; z-index: 30;
+  opacity: 0; pointer-events: none;
+  transition: transform .55s cubic-bezier(.3,.8,.3,1), opacity .45s;
+}
+#letter.revealed {
+  opacity: 1;
+  transform: translate(-50%, -52%) rotate(0deg) scale(1);
+  z-index: 35; pointer-events: auto;
+}
+#letter.aside {
+  opacity: 0;
+  transform: translate(-160%, -40%) rotate(-20deg) scale(.7);
+  pointer-events: none;
+}
+.letter-case { font-family: 'Special Elite', monospace; font-size: 9px; color: var(--ink-soft); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 6px; }
+.letter-h1   { font-family: 'Special Elite', monospace; font-size: 16px; margin: 0 0 4px; }
+.letter-rule { height: 2px; width: 40px; background: var(--stamp-red); margin: 6px 0 8px; }
+#letter p    { font-size: 11.5px; line-height: 1.45; color: var(--ink-soft); margin: 0 0 6px; }
+.letter-warning {
+  margin-top: 6px; border: 1px dashed var(--stamp-red-dark);
+  color: var(--stamp-red-dark); padding: 5px 7px;
+  font-family: 'Special Elite', monospace; font-size: 8px;
+  letter-spacing: .4px; line-height: 1.4;
+}
+
+/* ==========================================================
+   BORÍTÉK-KUPAC
+   ========================================================== */
+#envStack {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -48%);
+  width: 58vw; max-width: 220px; z-index: 10;
+  opacity: 0; transition: opacity .4s, transform .4s;
+}
+#envStack.visible { opacity: 1; }
+#envStack.docked  { transform: translate(-50%, -50%) scale(.75); top: 30%; }
+
+/* Boríték kártya */
+.env-card {
+  position: absolute; left: 0; top: 0; width: 100%;
+  aspect-ratio: 5/3.2; border-radius: 5px;
+  background: linear-gradient(155deg, var(--kraft), var(--kraft-dark));
+  box-shadow: 0 6px 16px rgba(0,0,0,.4);
+  transition: transform .5s cubic-bezier(.3,.8,.3,1), opacity .5s;
+}
+.env-card .elabel {
+  position: absolute; bottom: 7px; left: 6px; right: 6px; z-index: 4;
+  font-family: 'Special Elite', monospace; font-size: 10px; color: var(--ink);
+  background: rgba(255,255,255,.4); padding: 4px 8px; border-radius: 2px;
+  text-align: center; letter-spacing: .3px; line-height: 1.3;
+}
+.env-card .ename {
+  display: block; font-family: 'Caveat', cursive;
+  font-size: 15px; color: var(--stamp-red-dark); margin-top: 1px;
+}
+.env-card .eseal {
+  position: absolute; top: 46%; left: 50%;
+  transform: translate(-50%, -55%); z-index: 4;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #c23a3f, var(--stamp-red-dark));
+  box-shadow: 0 2px 4px rgba(0,0,0,.3);
+  transition: opacity .3s;
+}
+
+/* Felvéve (felemelve a kupacból) */
+.env-card.picked {
+  transform: translate(0, -30%) scale(1.08) rotate(-1deg) !important;
+  box-shadow: 0 24px 40px rgba(0,0,0,.55) !important;
+  z-index: 20;
+}
+
+/* Tépés animáció */
+.env-card.tearing { animation: tearShake .5s ease; }
+@keyframes tearShake {
+  0%   { transform: translate(0,-30%) rotate(-1deg) scale(1.08); }
+  15%  { transform: translate(-4px,-28%) rotate(-2.5deg) scale(1.08); }
+  30%  { transform: translate(4px,-32%) rotate(1.5deg) scale(1.08); }
+  45%  { transform: translate(-3px,-29%) rotate(-1.5deg) scale(1.08); }
+  60%  { transform: translate(3px,-31%) rotate(1deg) scale(1.08); }
+  80%  { transform: translate(-1px,-30%) rotate(-.5deg) scale(1.08); }
+  100% { transform: translate(0,-30%) rotate(-1deg) scale(1.08); }
+}
+.env-card.torn .eseal  { opacity: 0; }
+.env-card.torn .elabel { opacity: 0; }
+
+/* Tépés: két fél, ami szétválik */
+.tear-half       { position: absolute; left: 0; right: 0; overflow: hidden; transition: transform .5s cubic-bezier(.4,.1,.3,1), opacity .4s; }
+.tear-half-inner { position: absolute; left: 0; right: 0; width: 100%; aspect-ratio: 5/3.2; border-radius: 5px; background: linear-gradient(155deg, var(--kraft), var(--kraft-dark)); }
+.tear-top        { top: 0; height: 48%; border-radius: 5px 5px 0 0; }
+.tear-top .tear-half-inner { top: 0; }
+.tear-top .rip-edge    { position: absolute; bottom: -4px; left: 0; right: 0; height: 8px; background: repeating-linear-gradient(115deg, transparent 0 4px, var(--kraft) 4px 6px, transparent 6px 10px); }
+.tear-bottom     { bottom: 0; height: 52%; border-radius: 0 0 5px 5px; }
+.tear-bottom .tear-half-inner { bottom: 0; }
+.tear-bottom .rip-edge { position: absolute; top: -4px; left: 0; right: 0; height: 8px; background: repeating-linear-gradient(115deg, transparent 0 4px, var(--kraft-dark) 4px 6px, transparent 6px 10px); }
+.env-card.torn .tear-top    { transform: translateY(-50%) rotate(-8deg); opacity: 0; }
+.env-card.torn .tear-bottom { transform: translateY(50%) rotate(6deg); opacity: 0; }
+
+/* Visszacsukva, szétszórva az asztalon */
+.env-card.discarded {
+  transform: translate(-180%, 120%) rotate(-25deg) scale(.4) !important;
+  opacity: 0 !important;
+}
+.disc {
+  width: 56px; height: 36px; border-radius: 3px; position: absolute;
+  background: linear-gradient(155deg, var(--kraft-dark), #6b562f);
+  box-shadow: 0 3px 8px rgba(0,0,0,.35);
+  opacity: 0; transition: opacity .5s, transform .5s cubic-bezier(.3,.8,.3,1);
+  z-index: 5; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Caveat', cursive; font-size: 8px; color: var(--ink);
+  text-align: center; line-height: 1.1; padding: 2px;
+  overflow: hidden;
+}
+.disc.land { opacity: .8; }
+.disc:active { transform: scale(1.1) !important; }
+
+/* ==========================================================
+   TARTALOM-ZÓNA (cetli + fotó)
+   ========================================================== */
+#contentArea {
+  position: absolute; left: 50%; bottom: 6%;
+  transform: translateX(-50%);
+  width: 84vw; max-width: 340px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  z-index: 12; opacity: 0;
+  transition: opacity .4s ease .1s; pointer-events: none;
+}
+#contentArea.show { opacity: 1; pointer-events: auto; }
+
+/* Szöveges fecni (ragasztócsíkkal) */
+.fecni {
+  background: var(--paper); border-radius: 2px;
+  box-shadow: 0 8px 18px rgba(0,0,0,.45);
+  padding: 10px 12px; width: 100%; position: relative;
+  transform: rotate(-1.5deg);
+}
+.fecni::before {
+  content: ""; position: absolute; top: -6px; left: 28%;
+  width: 44px; height: 12px;
+  background: rgba(230,224,200,.6); transform: rotate(-3deg);
+  box-shadow: 0 1px 2px rgba(0,0,0,.12);
+}
+.fecni-title { font-family: 'Special Elite', monospace; font-size: 11px; color: var(--ink-soft); margin-bottom: 2px; }
+.fecni-text  { font-family: 'Caveat', cursive; font-size: 18px; line-height: 1.25; color: var(--stamp-red-dark); }
+
+/* Fotó megjelenítő (polaroid stílus) */
+#photoFrame {
+  position: relative; width: 100%; aspect-ratio: 4/3;
+  background: #fff; padding: 6px 6px 22px; border-radius: 2px;
+  box-shadow: 0 12px 24px rgba(0,0,0,.45);
+  transform: rotate(var(--pr, 1.2deg));
+}
+#photoFrame img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block; border-radius: 1px; background: var(--paper-dark);
+}
+#photoFrame .missing {
+  position: absolute; inset: 6px 6px 22px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
+  font-family: 'Special Elite', monospace; font-size: 9px; color: var(--ink-soft);
+  background: repeating-linear-gradient(45deg, var(--paper), var(--paper) 5px, var(--paper-dark) 5px, var(--paper-dark) 10px);
+}
+.photo-counter {
+  position: absolute; bottom: 6px; left: 0; right: 0;
+  text-align: center;
+  font-family: 'Special Elite', monospace; font-size: 9px; color: var(--ink-soft);
+}
+.tap-left, .tap-right { position: absolute; top: 0; bottom: 22px; width: 40%; z-index: 3; }
+.tap-left  { left: 0; }
+.tap-right { right: 0; }
+#photoFrame.slide-left img  { animation: slideL .3s ease; }
+#photoFrame.slide-right img { animation: slideR .3s ease; }
+@keyframes slideL { 0% { transform: translateX(30px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+@keyframes slideR { 0% { transform: translateX(-30px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+
+/* Következő boríték gomb */
+#nextEnvBtn {
+  font-family: 'Caveat', cursive; font-size: 18px; color: var(--stamp-red-dark);
+  background: var(--paper); border: none;
+  padding: 8px 20px; border-radius: 2px; margin-top: 6px;
+  box-shadow: 0 6px 14px rgba(0,0,0,.4);
+  display: none; cursor: pointer;
+}
+#nextEnvBtn.show { display: block; animation: fadeUp .4s ease; }
+#putDownBtn {
+  font-family: 'Special Elite', monospace; font-size: 11px; color: var(--ink-soft);
+  background: var(--paper); border: none;
+  padding: 6px 16px; border-radius: 2px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.35);
+  cursor: pointer; letter-spacing: .5px;
+}
+@keyframes fadeUp { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================================
+   FEJEZET-ELVÁLASZTÓ
+   ========================================================== */
+#chapterOverlay {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 8vw; opacity: 0;
+  transition: opacity .4s; pointer-events: none;
+}
+#chapterOverlay.show { opacity: 1; pointer-events: auto; }
+.chapter-card {
+  background: var(--paper); border-radius: 3px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.5);
+  padding: 26px 22px 20px; width: min(80vw, 300px);
+  text-align: center; transform: rotate(-1.5deg); position: relative;
+}
+.chapter-card::before {
+  content: ""; position: absolute; top: -8px; left: 30%;
+  width: 50px; height: 14px;
+  background: rgba(230,224,200,.6); transform: rotate(-3deg);
+  box-shadow: 0 1px 2px rgba(0,0,0,.12);
+}
+.chapter-stamp { border: 3px solid var(--stamp-red); color: var(--stamp-red); padding: 9px 14px; border-radius: 3px; transform: rotate(-3deg); margin-bottom: 14px; display: inline-block; }
+.chapter-roman { font-family: 'Special Elite', monospace; font-size: 11px; letter-spacing: 2px; }
+.chapter-title { font-family: 'Special Elite', monospace; font-size: 17px; margin-top: 3px; }
+.chapter-teaser { font-family: 'Caveat', cursive; font-size: 20px; color: var(--stamp-red-dark); }
+
+/* ==========================================================
+   ZÁRÓ LAP
+   ========================================================== */
+#closingCard {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-1deg);
+  width: 80vw; max-width: 320px;
+  background: var(--paper); border-radius: 3px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.5);
+  padding: 22px 20px; z-index: 30;
+  opacity: 0; transition: opacity .5s; pointer-events: none;
+}
+#closingCard.show { opacity: 1; pointer-events: auto; }
+#closingCard .letter-h1 { font-size: 16px; line-height: 1.3; }
+#closingCard p { font-family: 'Caveat', cursive; font-size: 20px; line-height: 1.35; color: var(--stamp-red-dark); margin-top: 10px; }
+
+/* Animált szív a záró lapon */
+.closing-heart {
+  display: block; margin: 16px auto 4px; width: 36px; height: 36px;
+  animation: heartbeat 1.4s ease-in-out infinite;
+}
+.closing-heart svg { width: 100%; height: 100%; }
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  14%      { transform: scale(1.2); }
+  28%      { transform: scale(1); }
+  42%      { transform: scale(1.15); }
+  56%      { transform: scale(1); }
+}
+
+/* ==========================================================
+   KONFETTI (záró lapon)
+   ========================================================== */
+.confetti-wrap {
+  position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 31;
+}
+.confetti-piece {
+  position: absolute; top: -10px;
+  width: 8px; height: 12px; border-radius: 1px;
+  opacity: 0;
+  animation: confettiFall var(--dur, 3s) var(--delay, 0s) ease-in forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  25%  { transform: translateY(25vh) rotate(120deg) translateX(var(--drift, 15px)); opacity: 1; }
+  50%  { transform: translateY(50vh) rotate(240deg) translateX(calc(var(--drift, 15px) * -0.6)); opacity: .9; }
+  75%  { transform: translateY(75vh) rotate(340deg) translateX(var(--drift, 15px)); opacity: .6; }
+  100% { transform: translateY(105vh) rotate(420deg); opacity: 0; }
+}
+
+/* ==========================================================
+   SZERELMES LEVÉL (az akta végén, a záró lap után)
+   ========================================================== */
+#loveLetter {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  width: 84vw; max-width: 330px;
+  background: #faf6ee;
+  border-radius: 3px;
+  box-shadow: 0 24px 50px rgba(0,0,0,.55);
+  padding: 22px 20px 20px; z-index: 32;
+  opacity: 0; pointer-events: none;
+  transition: opacity .6s ease, transform .6s cubic-bezier(.3,.8,.3,1);
+}
+#loveLetter.show {
+  opacity: 1; pointer-events: auto;
+  transform: translate(-50%, -50%) rotate(-1deg);
+}
+#loveLetter .ll-header {
+  font-family: 'Special Elite', monospace; font-size: 9px; color: var(--ink-soft);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+}
+#loveLetter .ll-class {
+  display: inline-block; border: 2px solid var(--stamp-red); color: var(--stamp-red);
+  font-family: 'Special Elite', monospace; font-size: 8px; padding: 3px 8px;
+  border-radius: 2px; transform: rotate(-3deg); margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+#loveLetter .ll-rule {
+  height: 2px; width: 40px; background: var(--stamp-red); margin: 0 0 14px;
+}
+#loveLetter .ll-body {
+  font-family: 'Caveat', cursive; font-size: 20px; line-height: 1.4;
+  color: var(--ink); white-space: pre-line;
+}
+#loveLetter .ll-sign {
+  font-family: 'Caveat', cursive; font-size: 22px; color: var(--stamp-red-dark);
+  margin-top: 16px; text-align: right;
+}
+#loveLetter .ll-tap {
+  margin-top: 14px; text-align: center;
+  font-family: 'Special Elite', monospace; font-size: 9px; color: var(--ink-soft);
+  letter-spacing: .5px;
+}
+
+/* ==========================================================
+   BONUS SZEKCIÓ — videó + tereptúra fotók (záró lap után)
+   ========================================================== */
+#bonusSection {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 88vw; max-width: 340px;
+  background: var(--paper); border-radius: 3px;
+  box-shadow: 0 20px 45px rgba(0,0,0,.55);
+  padding: 18px 16px 14px; z-index: 32;
+  opacity: 0; pointer-events: none;
+  transition: opacity .5s ease, transform .5s cubic-bezier(.3,.8,.3,1);
+  max-height: 82vh; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#bonusSection.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) rotate(0.5deg); }
+#bonusSection .bonus-header {
+  font-family: 'Special Elite', monospace; font-size: 9px; color: var(--ink-soft);
+  letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+}
+#bonusSection .bonus-class {
+  display: inline-block; border: 2px solid var(--stamp-red); color: var(--stamp-red);
+  font-family: 'Special Elite', monospace; font-size: 8px; padding: 3px 8px;
+  border-radius: 2px; transform: rotate(-2deg); margin-bottom: 12px; letter-spacing: 1px;
+}
+#bonusSection .bonus-rule { height: 2px; width: 40px; background: var(--stamp-red); margin-bottom: 12px; }
+#bonusSection .bonus-label {
+  font-family: 'Caveat', cursive; font-size: 17px; color: var(--ink); margin: 10px 0 6px;
+}
+#bonusSection video {
+  width: 100%; border-radius: 4px; margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+#bonusSection .mud-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px;
+}
+#bonusSection .mud-grid img {
+  width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 3px; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
+}
+#bonusSection .bonus-tap {
+  text-align: center; font-family: 'Special Elite', monospace;
+  font-size: 9px; color: var(--ink-soft); letter-spacing: .5px; margin-top: 10px;
+}
+
+/* Asztalba karcolt üzenet — a szív közepén jelenik meg */
+#deskCarve {
+  position: absolute; left: 50%; top: 47%;
+  transform: translate(-50%, -50%);
+  font-family: 'Caveat', cursive; font-size: 28px;
+  color: rgba(0,0,0,.18);
+  text-shadow: 0 1px 0 rgba(255,255,255,.08);
+  z-index: 2; pointer-events: none;
+  opacity: 0; transition: opacity 1.8s ease-in;
+  letter-spacing: 2px;
+}
+#deskCarve.visible { opacity: 1; }
+
+/* ==========================================================
+   LIGHTBOX (fotó kinagyítás)
+   ========================================================== */
+#lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(20,16,12,.92);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity .25s, visibility .25s;
+}
+#lightbox.show { opacity: 1; visibility: visible; }
+#lightbox img  { max-width: 92vw; max-height: 88vh; object-fit: contain; border-radius: 3px; box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+#lightbox .close { position: absolute; top: 16px; right: 16px; color: #ddd; font-size: 28px; background: none; border: none; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="desk">
+
+  <!-- ======================== NAPSZ\u00c1ML\u00c1L\u00d3 ======================== -->
+  <div id="dayCounter"></div>
+
+  <!-- ======================== ASZTALI T\u00c1RGYAK (SVG) ======================== -->
+  <div class="prop-coffee" id="propCoffee">
+    <svg width="40" height="36" viewBox="0 0 40 36"><ellipse cx="18" cy="30" rx="14" ry="5" fill="#6b4a2a"/><rect x="4" y="8" width="28" height="22" rx="3" fill="#8a6840"/><ellipse cx="18" cy="10" rx="13" ry="5" fill="#a07850"/><ellipse cx="18" cy="10" rx="10" ry="3.5" fill="#3a2210"/><path d="M32 14 Q38 14 38 20 Q38 26 32 26" stroke="#8a6840" stroke-width="3" fill="none"/><ellipse cx="14" cy="9" rx="3" ry="1.2" fill="rgba(255,255,255,.12)"/></svg>
+  </div>
+  <div class="prop-pen" id="propPen">
+    <svg width="10" height="90" viewBox="0 0 10 90"><rect x="2" y="0" width="6" height="70" rx="1" fill="#1a1a2e"/><rect x="1.5" y="0" width="7" height="12" rx="1" fill="#2a2a4e"/><rect x="2.5" y="68" width="5" height="14" fill="#c4a35a"/><polygon points="3.5,82 6.5,82 5,90" fill="#333"/><rect x="2" y="11" width="6" height="2" rx=".5" fill="#c4a35a" opacity=".6"/></svg>
+  </div>
+  <div class="prop-clip" id="propClip">
+    <svg width="18" height="44" viewBox="0 0 18 44"><path d="M5 40 L5 8 Q5 3 9 3 Q13 3 13 8 L13 34 Q13 38 9 38 Q6 38 6 34 L6 12" stroke="#b0b0b0" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+  </div>
+  <div class="prop-stamp" id="propStamp">
+    <svg width="34" height="36" viewBox="0 0 34 36"><rect x="8" y="0" width="18" height="20" rx="2" fill="#6b4c2a"/><rect x="6" y="18" width="22" height="6" rx="1" fill="#5a3c1e"/><rect x="4" y="24" width="26" height="4" rx="1" fill="#4a2c14"/><rect x="6" y="28" width="22" height="6" rx="1" fill="#c23a3f"/><rect x="10" y="2" width="14" height="8" rx="1" fill="#5a3c1e" opacity=".5"/><line x1="11" y1="5" x2="23" y2="5" stroke="#8a6840" stroke-width=".8"/><line x1="11" y1="7.5" x2="20" y2="7.5" stroke="#8a6840" stroke-width=".8"/></svg>
+  </div>
+
+  <!-- ======================== 4 REJTETT REJTVÉNY-CETLI ========================
+       ▼▼▼ SZERKESZD: minden cetliben a clue-text (személyes utalás a helyre)
+           és a clue-riddle (mit kell megszámolnia/megnéznie) szövegét.
+           A cetlik a 4 asztali tárgy (kávé, toll, gémkapocs, bélyegző) alól
+           jönnek elő koppintásra. ▼▼▼
+       ========================================================================= -->
+  <div class="clue-scrap" id="clue1" style="top:52px;right:10px;--cr:-3deg;">
+    <div class="clue-station">1. állomás</div>
+    <div class="clue-text">Hol tisztjeink útja elkezdődik</div>
+    <div class="clue-riddle">Számold meg, hány gép megy el a fejünk felett</div>
+  </div>
+  <div class="clue-scrap" id="clue2" style="bottom:136px;right:14px;--cr:2deg;">
+    <div class="clue-station">2. állomás</div>
+    <div class="clue-text">Ahol a víz visszahúzódott, és megmutatta, amit máskor elrejt</div>
+    <div class="clue-riddle">Számold meg, mennyi követ sikerült maximum egymásra raknunk</div>
+  </div>
+  <div class="clue-scrap" id="clue3" style="top:58px;left:34px;--cr:-1.5deg;">
+    <div class="clue-station">3. állomás</div>
+    <div class="clue-text">Ahonnan az egész várost belátni a kereszt árnyékában</div>
+    <div class="clue-riddle">Számold meg, mennyi puszit adok a nyakadra nézelődés közben</div>
+  </div>
+  <div class="clue-scrap" id="clue4" style="bottom:84px;left:12px;--cr:3deg;">
+    <div class="clue-station">4. állomás</div>
+    <div class="clue-text">Hol akaratunk küzd a testünkkel, de a testünk győz. Ham-nyam</div>
+    <div class="clue-riddle">Számold meg, mennyi tányér hamit eszek</div>
+  </div>
+
+  <!-- ======================== DOBOZ ======================== -->
+  <!-- ▼▼▼ SZERKESZD: az asztalba karcolt üzenet, ami a szív közepén jelenik meg ▼▼▼ -->
+  <div id="deskCarve">♾️</div>
+  <div id="box">
+    <div id="lockHasp"><div class="hasp-loop"></div><div class="hasp-body">🔒</div></div>
+    <div id="boxLid"></div>
+    <div id="boxBase"><div class="corner tl"></div><div class="corner tr"></div><div class="stencil">N.D.L. — 018</div></div>
+  </div>
+
+  <!-- KÓD-PANEL HÁTTÉRFAL (blokkolja a félrekattintást) -->
+  <div id="codeBackdrop"></div>
+
+  <!-- KÓD-PANEL -->
+  <div id="codePanel" class="hidden">
+    <div class="code-title sf">HOZZÁFÉRÉSI KÓD</div>
+    <div class="digits" id="digits">
+      <input type="tel" inputmode="numeric" maxlength="1" autocomplete="off">
+      <input type="tel" inputmode="numeric" maxlength="1" autocomplete="off">
+      <input type="tel" inputmode="numeric" maxlength="1" autocomplete="off">
+      <input type="tel" inputmode="numeric" maxlength="1" autocomplete="off">
+    </div>
+    <button class="unlock-btn" id="unlockBtn">Feloldás</button>
+    <div class="code-error sf" id="codeError"></div>
+  </div>
+
+  <!-- ======================== LEVÉL ========================
+       ▼▼▼ SZERKESZD: a bevezető levél szövege, amit a dobozból vesz elő ▼▼▼ -->
+  <div id="letter">
+    <div class="letter-case sf">AKTASZÁM: NDL–018 · HOZZÁFÉRÉS: BABÁM</div>
+    <h1 class="letter-h1 sf">Nudelenciklopédia</h1>
+    <div class="letter-rule"></div>
+    <p>Boldog 1,5 éves hőfordulót, Babám. Miközben gondolkodtam, mivel is álljak eléd ma, eszembe jutott random, hogy mennyire szeretem Nudelt.</p>
+    <p>Előjött felfedező tudós szerelmed, hogy az ügy végére járjon. Hosszas kutatómunka, megannyi munkaóra, de megérte.</p>
+    <p>Összeállítottam egy Nudelenciklopédiát, számon tartva az eddig felfedezett Nudelfajtákat.</p>
+    <div class="letter-warning">SZIGORÚAN TITKOS — 99 ÉVRE ZÁROLVA · TERJESZTÉSE AKASZTÁS ÁLTALI ÖLELÉST VON MAGA UTÁN</div>
+  </div>
+
+  <!-- ======================== BORÍTÉK-KUPAC ======================== -->
+  <div id="envStack"></div>
+
+  <!-- ======================== TARTALOM (cetli + fotó) ======================== -->
+  <div id="contentArea">
+    <div class="fecni">
+      <div class="fecni-title sf" id="fTitle"></div>
+      <div class="fecni-text hand" id="fText"></div>
+    </div>
+    <div id="photoFrame">
+      <div class="tap-left" id="tapLeft"></div>
+      <div class="tap-right" id="tapRight"></div>
+      <img id="photoImg" alt="">
+      <div class="missing" id="photoMissing" style="display:none;"></div>
+      <div class="photo-counter sf" id="photoCounter"></div>
+    </div>
+    <button id="nextEnvBtn" class="hand">következő boríték &#8594;</button>
+    <button id="putDownBtn">&#8595; leteszem</button>
+  </div>
+
+  <!-- FEJEZET-ELVÁLASZTÓ -->
+  <div id="chapterOverlay">
+    <div class="chapter-card">
+      <div class="chapter-stamp sf"><div class="chapter-roman" id="chRoman"></div><div class="chapter-title" id="chTitle"></div></div>
+      <div class="chapter-teaser hand" id="chTeaser"></div>
+    </div>
+  </div>
+
+  <!-- ZÁRÓ LAP
+       ▼▼▼ SZERKESZD: a záró összegzés szövege, a szív animáció után jelenik meg ▼▼▼ -->
+  <div id="closingCard">
+    <div class="letter-case sf">ZÁRÓJELENTÉS · NDL–018</div>
+    <h1 class="letter-h1 sf">Az akta lezárva.</h1>
+    <div class="letter-rule"></div>
+    <p>Eddig ennyi Nudelt sikerült dokumentálnom. De biztos vagyok benne, hogy ez a kutatás sosem lesz kész — mert veled minden nap előkerül egy addig ismeretlen fajta. Tartson örökké eme kutatómunka. Mindenem vagy Tündérkém, remélem együtt éljük le az egész életünket.</p>
+    <p style="margin-top:6px;">Szeretlek, Babám. Nagyon.</p>
+    <div class="closing-heart">
+      <svg viewBox="0 0 32 29"><path d="M16 28 C12 24 0 17 0 9 A8 8 0 0 1 16 5 A8 8 0 0 1 32 9 C32 17 20 24 16 28Z" fill="var(--stamp-red)" opacity=".85"/></svg>
+    </div>
+    <div id="closingDate" class="sf" style="margin-top:8px;font-size:10px;color:var(--ink-soft);text-align:center;"></div>
+  </div>
+
+  <!-- KONFETTI KONTÉNER (JS tölti fel) -->
+  <div class="confetti-wrap" id="confettiWrap"></div>
+
+  <!-- ======================== BONUS SZEKCIÓ ========================
+       ▼▼▼ SZERKESZD:
+           - videó: assets/aji/01.mp4 (vagy ahogy elnevezted a motorozós videót)
+           - sár-fotók: assets/kaland-1/1.jpg, 2.jpg, 3.jpg
+       ▼▼▼
+       ================================================================= -->
+  <div id="bonusSection">
+    <div class="bonus-header">MELLÉKLET B · TEREPEN RÖGZÍTETT ANYAG</div>
+    <div class="bonus-class">BIZALMAS — CSAK BELSŐ HASZNÁLATRA</div>
+    <div class="bonus-rule"></div>
+    <div class="bonus-label">🏍️ Terepmunka dokumentáció</div>
+    <!-- ▼▼▼ SZERKESZD: ha a videó fájlneve más, írd át az src-t ▼▼▼ -->
+    <video controls playsinline preload="auto" style="width:100%;border-radius:4px;margin-bottom:8px;box-shadow:0 4px 12px rgba(0,0,0,.25);background:#000;">
+      <source src="assets/aji/1.mp4" type="video/mp4">
+      <source src="assets/aji/1.mov" type="video/quicktime">
+      A böngésződ nem támogatja a videólejátszást.
+    </video>
+    <!-- ▲▲▲ SZERKESZD ▲▲▲ -->
+    <div class="bonus-label">🥾 Terepgyakorlat: a sár-incidens</div>
+    <div class="mud-grid">
+      <img src="assets/kaland-1/1.jpg" alt="Sár 1" onclick="openLightbox(this.src)">
+      <img src="assets/kaland-1/2.jpg" alt="Sár 2" onclick="openLightbox(this.src)">
+      <img src="assets/kaland-1/3.jpg" alt="Sár 3" onclick="openLightbox(this.src)">
+    </div>
+    <div class="bonus-tap">koppints a továbblépéshez</div>
+  </div>
+
+  <!-- ======================== SZERELMES LEVÉL ========================
+       ▼▼▼ SZERKESZD: a ll-body a levél szövege, a ll-sign az aláírás.
+           Ez jelenik meg a záró lap UTÁN, az utolsó dolog a galéria előtt. ▼▼▼
+       ================================================================= -->
+  <div id="loveLetter">
+    <div class="ll-header">MELLÉKLET A/1 · SZEMÉLYES FELJEGYZÉS</div>
+    <div class="ll-class">NEM AZ AKTA RÉSZE</div>
+    <div class="ll-rule"></div>
+    <div class="ll-body"> Remélem tetszett kicsiny művem, gondoltam megpróbálok valami személyeset adni. Zárásként még egy gondolat: nem szeretném, hogy Nudelem úgy érezze többet, hogy nem elég intellektuális a kapcsolatunk, hogy beszélgetésinknek nincsen nyoma. Kattints még a levélen található szívre</div>
+    <!-- ▼▼▼ SZERKESZD: írd át az Instagram linkre ▼▼▼ -->
+    <div class="ll-sign"><a href="https://instagram.com/intellectualminutes" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">a kutatód ❤️</a></div>
+    <!-- ▲▲▲ ha rákoppint az aláírásra, megnyílik az Insta ▲▲▲ -->
+    <div class="ll-tap">koppints a galéria módhoz</div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <button class="close" id="lbClose">&#10005;</button>
+  <img id="lbImg" alt="">
+</div>
+
+
+<script>
+/* ==========================================================
+   NUDELENCIKLOPÉDIA — Konfiguráció
+   ==========================================================
+   TE EZEKET SZERKESZD:
+   1. UNLOCK_CODE  → a 4 jegyű kód, amit Babám a 4 budapesti
+                      állomáson gyűjt össze augusztus 20-án.
+   2. ANNIVERSARY  → a kapcsolat kezdőnapja (év, hónap-1, nap).
+                      new Date(2025, 1, 20) = 2025. február 20.
+   3. ENTRIES      → a 25 Nudel-fajta (slug, title, count, note).
+                      A slug egyezzen az assets/ almappa nevével.
+                      A count a mappában lévő képek száma (1.jpg, 2.jpg...).
+   4. CHAPTERS     → fejezet-elválasztók: melyik ENTRIES index
+                      előtt jelenjen meg.
+   5. Rejtvény-cetlik → közvetlenül a HTML-ben, a <div class="clue-scrap">
+                        elemekben.
+   ========================================================== */
+
+/* ▼▼▼ SZERKESZD: a 4 jegyű kód, amit aug. 20-án gyűjtötök össze ▼▼▼ */
+const UNLOCK_CODE = "1944";
+/* ▲▲▲ SZERKESZD ▲▲▲ */
+
+/* ▼▼▼ SZERKESZD: a kapcsolat kezdőnapja (év, hónap-1, nap) ▼▼▼ */
+const ANNIVERSARY = new Date(2025, 1, 20); // 2025.02.20.
+/* ▲▲▲ SZERKESZD ▲▲▲ */
+
+/* ▼▼▼ SZERKESZD: Nudel-fajták listája ▼▼▼
+   slug  = a mappa neve az assets/ alatt (NE változtasd, hacsak a mappát is)
+   title = a borítékon megjelenő név
+   count = hány kép van a mappában (1.jpg, 2.jpg ... eddig). video = opcionális videó fájlnév
+   note  = a cetlire írt szöveg
+   A SORREND = a borítékok sorrendje!
+   ▼▼▼ */
+const ENTRIES = [
+  // ═══ I. NEMZETSÉG: Ritka, érdekes fajták ═══
+  { slug: "friss-baratos",   title: "Friss Barátos",    count: 1,  note: "Megfigyelésem első dokumentált képe, elragadó és vicces, azonban picit még visszahúzódó. Nem jelentkezett rajta még a Nudelek jellegzetes tulajdonságai, további megfigyelés szükséges. Szeretnivaló." },
+  { slug: "naci-best",       title: "Náci",             count: 1,  note: "Hát, ez egy igazán különleges alfaja. Ritkán mutatkozik meg a nyilvánosság előtt. Feltételezésem szerint minden Nudel Náci Nudel legbelül, de ezt csak ritkán élik meg nyilvánosan. Értékes darab, nagy felfedezés." },
+  { slug: "mokas-haju",      title: "Mókás Hajú",       count: 4,  note: "Vizuálisan meglepő élményt nyújt, meglepő, hisz köztudott, hogy a Nudel egy magára nagyon adó faj, ritkán faj ez is. Általában valamiféle zsiványkodás következtében jelenik meg." },
+  { slug: "fotogen",         title: "Fotogén",          count: 9,  note: "Ez a Mókás Hajú testvérnemzetsége, szintén valami zsiványkodás során válik láthatóvá. Tudni illik róla, hogy a legkülönbözőbb helyzetekben is fellelhető. Tetszik nekem." },
+  { slug: "nyanya",          title: "Nyanya",           count: 2,  note: "Alapból az összes Nudel benne van jócskán a korban, de ezen fajon jobban kiül az öregedés nyoma, fél lábbal a sorban van már, cserébe életkedve tartja még evilágra. Szemei különösen káprázatosak." },
+  { slug: "pottom",          title: "Pöttöm",           count: 3, video: "4.mp4", note: "Ahogyan azt megfigyeltem, Nudelek nem nőnek túl nagyra, cserébe annál aranyosabbak. Kis apró izgő-mozgó boldogságok." },
+  { slug: "gyermeki",        title: "Gyermeki",         count: 13, note: "Ezen faj hajlamosabb kalamajkákba és zsiványságokban részt venni, bár termete itt is meghatározó tényező. Angyali." },
+  { slug: "szocialis",       title: "Szociális",        count: 1,  note: "Abszolút kuriózum, csodaszámra megy a vele való találkozás. Hallottam legendákat róla, de sose hittem, hogy valódi, mindaddig, míg bele nem futottam. Meglepően szórakoztató társaságban, érdemes lenne több alkalmat szánni spanolásra." },
+  { slug: "izom-gizella",    title: "Izom Gizella",     count: 1,  note: "Szintén egyedülálló, alig lelhető fel, inkább csak szóban erős, mint fizikailag. Mindenképpen értékelendő az igyekezete és lelkesedése, hisz olyan izomkolosszusoknak is nekimegy, mint Szerelme (eddig 0, azaz nulla % sikerrel)." },
+  { slug: "vilagfajdalom",   title: "Világfájdalom",    count: 5,  note: "Természetes ösztön, hogyha fájdalom ér, akkor az kiül az arcunkra. Azonban ez a fajta Nudel az evolúció meghazudtolása, hisz fájdalom nélkül is felveszi a fájdalmas arcot, talán elrettentésből, talán párzási szándékból, további felderítést igényel." },
+  // ═══ II. NEMZETSÉG: Közelebb az ember szívéhez ═══
+  { slug: "gigazsivany",     title: "Gigazsivány",      count: 11, note: "Nudelek alfája és omegája, csak az arra érdemes személyeknek mutatja meg magát (nekem, hehe). A legkülönbözőbb kalandokba keveredik, állandóan valami zsiványságon töri fejét, de egy angyal legbelül." },
+  { slug: "produktiv",       title: "Produktív",         count: 4,  note: "Alapból a Nudel egy tevékeny faj, nem szeret nagyon a semmittevést, azonban néha különösen ügyes, ezen egyedeket meg is örökítettem. Büszke vagyok rájuk, amiért tesznek magukért, az egyik kedvenc fajtám." },
+  { slug: "csaladi-nudel",   title: "Családi Nudel",    count: 2,  note: "Nudel a saját közegében különlegesen gyönyörű, jó látni, honnan jött ez a kis Tünemény. Azonban túl sok időt nem szokott ilyen közegben tölteni, 1 nap után igénye van a változásra." },
+  { slug: "allatbarat",      title: "Állatbarát",       count: 8,  note: "Emberekkel ellentétben állatokkal nagyon hamar kijön és kapcsolatba lép velük, faltól függetlenül. Megfigyelésem alatt sokszínű állatsereggel lépett kapcsolatba, valamit tud, amit mi nem, érdemes tőle tanulni. Imádnivaló látványt nyújt, egyik kedvencem." },
+  { slug: "leso-nudel",      title: "Leső",             count: 9,  note: "Hiába, a Nudel egy ragadozó faj, kiszemeli, levadássza és megharapdálja áldozatát (lennék áldozat... ja, vagyok is, és szeretek az lenni, nyeheheh)." },
+  { slug: "gigacic",         title: "Gigacic",          count: 3,  note: "Nem kell nagyon magyaráznom, mélyen belevesznék, keblei világbajnokok, egyik kedvencem." },
+  { slug: "gigajig",         title: "Gigajig",          count: 5,  note: "Gigacic szoros testvére, kívánatos és ropogós, rátekintve egyre kevesebb vér marad a férfi fejében. Egyik kedvencem." },
+  // ═══ III. NEMZETSÉG: A legbensőségesebbek ═══
+  { slug: "vilagjaro",       title: "Világjáró",        count: 18, note: "Lételeme az utazás, az új helyek bejárása, szép országok megnézése, ilyenkor boldog igazán. Volt szerencsém több ilyen utazást is dokumentálnom és elmondhatom, fantasztikus útitárs. Jó szervező és megtalálja a mások számára rejtett lehetőségeket is, érdemes mindenhova magunkkal vinni, akár a zsebünkben. Egyik kedvencem." },
+  { slug: "alvo",            title: "Alvó",             count: 8,  note: "Tartja a mondás, munka után édes a pihenés. Naplopó Nudel azonban munka nélkül is békésen alussza álmát. Viccet félretéve kizárólag biztonságos közegben képes az alvásra, azonban ha megtalálja ezen közeget, kis fészkalódás után angyalian szenderül álomba, mely álmot Barátja mindig éberen őriz. Megtiszteltetés a párnájának lenni, bárki is tölti be ezen szerepet (hihi, csak én, hihi). Egyik kedvencem." },
+  { slug: "szerelmes",       title: "Szerelmes",        count: 8,  note: "Naponta észlelünk ilyenfajta Nudelt, az elmúlt 1,5 évben igen megszaporodtak, valami biztos történhetett. Imádnivaló, igyekszik mindig kifejezni szerelmét, és ezt Szerelme tudtára adni. Kreatív módszerektől sem riad vissza. Egyik kedvencem." },
+  { slug: "puszit-kapo",     title: "Puszit Kapó",      count: 8,  note: "Egymás közt, ember legyen a talpán, aki kibírja, hogy egy ilyen Tündérkét ne puszilgasson állandóan. Ilyen puszilgatás során kerül elő a Puszit Kapó Nudel, aki sugározza a boldogságot, gödröcskéi mindig megjelennek, elkerülhetetlenné téve az újabb puszilgatást. Egyik kedvencem." },
+  { slug: "ajj",             title: "Ajj",              count: 10, note: "Szavak nincsenek rá, nagyon erőlködni kell, hogy ajjon kívül máshogy leírjam. Egy Csoda. Szeretetreméltó. Tünemény. Gyönyörű. Best. Egyik kedvencem." },
+  { slug: "extran-jo-kepek", title: "Extra",            count: 10, note: "Ez nem egy Nudelfajta, inkább a róla készült legjobb képek gyűjteménye, mélyen igazán látszódik, ki is ő valójában, micsoda aurája van és mennyire szeretnivaló." },
+];
+/* ▲▲▲ ENTRIES VÉGE ▲▲▲ */
+
+/* ▼▼▼ SZERKESZD: fejezet-elválasztók — a szám = melyik ENTRIES index ELŐTT jelenik meg ▼▼▼ */
+const CHAPTERS = {
+  0:  { r: "I.",   t: "AZ ELSŐ NEMZETSÉG",       s: "ritkán jelennek meg, de fontos a megfigyelésük" },
+  10: { r: "II.",  t: "A 2. NAGY NEMZETSÉG",      s: "ők sokkal közelebb állnak az ember szívéhez" },
+  17: { r: "III.", t: "A LEGBENSŐSÉGESEBBEK",     s: "kikhez fogható nagyvilágon nincsen" },
+};
+/* ▲▲▲ CHAPTERS VÉGE ▲▲▲ */
+
+/* ==========================================================
+   Belső szekvencia felépítése (fejezetek + bejegyzések)
+   ========================================================== */
+const sequence = [];
+ENTRIES.forEach((e, i) => {
+  if (CHAPTERS[i]) sequence.push({ type: "chapter", ...CHAPTERS[i] });
+  sequence.push({ type: "entry", data: e, num: i + 1 });
+});
+sequence.push({ type: "closing" });
+
+/* ==========================================================
+   Állapot
+   ========================================================== */
+const $ = id => document.getElementById(id);
+let phase = "box";   // box → code → unlock → lid → letter → browsing → chapter → closing → gallery
+let eIdx = 0;        // aktuális ENTRIES index
+let pIdx = 0;        // aktuális fotó index az adott entry-n belül
+let picked = false;
+const shownChapters = new Set();
+
+/* Segédfüggvények */
+function sRot(i) {
+  const v = Math.sin(i * 12.9898) * 43758.5453;
+  return ((v - Math.floor(v)) * 10 - 5).toFixed(1);
+}
+
+/* ==========================================================
+   NAP-SZÁMLÁLÓ
+   ========================================================== */
+(function () {
+  const now = new Date();
+  const diff = Math.floor((now - ANNIVERSARY) / (1000 * 60 * 60 * 24));
+  const el = $('dayCounter');
+  if (!el) return;
+  // augusztus 20 = pontosan 1.5 év (547 nap körül)
+  const isAug20 = now.getMonth() === 7 && now.getDate() === 20;
+  if (isAug20) {
+    el.textContent = '1,5 \u00e9ve \u2764\uFE0F ma pont m\u00e1sf\u00e9l \u00e9ve!';
+  } else {
+    el.textContent = diff + '. napja \u2764\uFE0F';
+  }
+})();
+
+/* Kód megjegyzése — ha már feloldotta, legközelebb nem kéri újra */
+(function () {
+  if (localStorage.getItem('nudel_unlocked') === '1') {
+    const lh = $('lockHasp');
+    const cp = $('codePanel');
+    const cb = $('codeBackdrop');
+    if (lh) lh.remove();
+    if (cp) cp.remove();
+    if (cb) cb.remove();
+    phase = 'lid';
+  }
+})();
+
+/* ==========================================================
+   EASTER EGG — 2× bögre + 2× toll 2 mp-en belül → ugrás a végére
+   ========================================================== */
+(function () {
+  const eeTaps = []; // { target: 'coffee'|'pen', time: ms }
+  function checkEE() {
+    const now = Date.now();
+    const recent = eeTaps.filter(t => now - t.time < 2000);
+    const coffees = recent.filter(t => t.target === 'coffee').length;
+    const pens = recent.filter(t => t.target === 'pen').length;
+    if (coffees >= 2 && pens >= 2) {
+      eeTaps.length = 0;
+      /* ugrás: az összes borítékot kihagyjuk, egyből a záró flow */
+      eIdx = ENTRIES.length;
+      envStack.classList.remove('visible', 'docked');
+      contentArea.classList.remove('show');
+      showClosing();
+    }
+  }
+  $('propCoffee').addEventListener('click', () => { eeTaps.push({ target: 'coffee', time: Date.now() }); checkEE(); });
+  $('propPen').addEventListener('click', () => { eeTaps.push({ target: 'pen', time: Date.now() }); checkEE(); });
+})();
+
+/* ==========================================================
+   REJTETT CETLIK — tárgy-koppintásra előjönnek
+   Csak a korai fázisokban interaktívak (box, code, lid, letter).
+   ========================================================== */
+const earlyPhases = ['box', 'code', 'unlock', 'lid', 'letter'];
+const clueMap = [
+  { prop: $('propCoffee'), scrap: $('clue1') },
+  { prop: $('propPen'),    scrap: $('clue2') },
+  { prop: $('propClip'),   scrap: $('clue3') },
+  { prop: $('propStamp'),  scrap: $('clue4') },
+];
+clueMap.forEach(({ prop, scrap }) => {
+  prop.addEventListener('click', e => {
+    e.stopPropagation();
+    if (!earlyPhases.includes(phase)) return;
+    scrap.classList.toggle('visible');
+  });
+  scrap.addEventListener('click', e => { e.stopPropagation(); scrap.classList.remove('visible'); });
+});
+
+/* ==========================================================
+   ELEMEK
+   ========================================================== */
+const box = $('box'), boxLid = $('boxLid'), lockHasp = $('lockHasp');
+const codePanel = $('codePanel'), unlockBtn = $('unlockBtn'), codeError = $('codeError');
+const digitsWrap = $('digits'), digitInputs = digitsWrap ? [...digitsWrap.querySelectorAll('input')] : [];
+const letter = $('letter'), envStack = $('envStack');
+const contentArea = $('contentArea'), fTitle = $('fTitle'), fText = $('fText');
+const photoFrame = $('photoFrame'), photoImg = $('photoImg'), photoMissing = $('photoMissing'), photoCounter = $('photoCounter');
+const tapLeft = $('tapLeft'), tapRight = $('tapRight'), nextEnvBtn = $('nextEnvBtn'), putDownBtn = $('putDownBtn');
+const chapterOverlay = $('chapterOverlay'), chRoman = $('chRoman'), chTitle = $('chTitle'), chTeaser = $('chTeaser');
+const closingCard = $('closingCard'), desk = $('desk');
+const lightbox = $('lightbox'), lbImg = $('lbImg'), lbClose = $('lbClose');
+
+/* ==========================================================
+   1) DOBOZ — koppintásra megjelenik a kód-panel
+   2) KÓD BEVITEL
+   (csak ha a lakat még nem lett átlépve localStorage-ból)
+   ========================================================== */
+if (unlockBtn) {
+  const codeBackdrop = $('codeBackdrop');
+
+  box.addEventListener('click', () => {
+    if (phase !== 'box') return;
+    phase = 'code';
+    codeBackdrop.classList.add('show');
+    codePanel.classList.remove('hidden');
+    digitInputs[0].focus();
+  });
+
+  /* Félrekattintás = lakat visszarakása */
+  codeBackdrop.addEventListener('click', () => {
+    if (phase !== 'code') return;
+    codePanel.classList.add('hidden');
+    codeBackdrop.classList.remove('show');
+    codeError.textContent = '';
+    digitInputs.forEach(i => { i.value = ''; });
+    phase = 'box';
+  });
+
+  digitInputs.forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/[^0-9]/g, '').slice(0, 1);
+      if (inp.value && i < 3) digitInputs[i + 1].focus();
+    });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !inp.value && i > 0) digitInputs[i - 1].focus();
+    });
+  });
+
+  unlockBtn.addEventListener('click', () => {
+    const code = digitInputs.map(i => i.value || '').join('');
+    if (code.length === 4 && code === UNLOCK_CODE) {
+      phase = 'unlock';
+      codePanel.classList.add('hidden');
+      codeBackdrop.classList.remove('show');
+      lockHasp.classList.add('off');
+      if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
+      localStorage.setItem('nudel_unlocked', '1');
+      setTimeout(() => {
+        lockHasp.remove();
+        codePanel.remove();
+        codeBackdrop.remove();
+        phase = 'lid';
+      }, 500);
+    } else {
+      codeError.textContent = 'Hibás kód';
+      digitsWrap.classList.remove('err');
+      void digitsWrap.offsetWidth;
+      digitsWrap.classList.add('err');
+      digitInputs.forEach(i => { i.value = ''; });
+      digitInputs[0].focus();
+    }
+  });
+}
+
+/* ==========================================================
+   3) FEDÉL — koppintásra felnyílik, levél megjelenik
+   ========================================================== */
+box.addEventListener('click', () => {
+  if (phase !== 'lid') return;
+  phase = 'lidOpening';
+  boxLid.classList.add('open');
+  setTimeout(() => {
+    letter.classList.add('revealed');
+    phase = 'letter';
+  }, 550);
+});
+
+/* ==========================================================
+   4) LEVÉL — koppintásra félrecsúszik, borítékok megjelennek
+   ========================================================== */
+letter.addEventListener('click', () => {
+  if (phase !== 'letter') return;
+  letter.classList.remove('revealed');
+  letter.classList.add('aside');
+  setTimeout(() => {
+    box.style.transition = 'opacity .4s';
+    box.style.opacity = '0';
+    setTimeout(() => { box.style.display = 'none'; }, 400);
+    buildStack();
+    envStack.classList.add('visible');
+    phase = 'browsing';
+    showEntry();
+  }, 300);
+});
+
+/* ==========================================================
+   BORÍTÉK-KUPAC FELÉPÍTÉSE
+   ========================================================== */
+function buildStack() {
+  envStack.innerHTML = '';
+  for (let i = ENTRIES.length - 1; i >= eIdx; i--) {
+    const card = document.createElement('div');
+    card.className = 'env-card';
+    card.dataset.idx = i;
+    const depth = i - eIdx;
+    const show = Math.min(depth, 5);
+    if (depth > 5) { card.style.display = 'none'; }
+    else {
+      card.style.transform = `translate(${show * 2}px, ${-show * 2}px) rotate(${sRot(i)}deg)`;
+      card.style.zIndex = 100 - depth;
+    }
+    card.innerHTML = `
+      <div class="eseal"></div>
+      <div class="elabel">AKTA ${String(i + 1).padStart(2, '0')}<span class="ename">${ENTRIES[i].title}</span></div>
+      <div class="tear-half tear-top"><div class="tear-half-inner"></div><div class="rip-edge"></div></div>
+      <div class="tear-half tear-bottom"><div class="tear-half-inner"></div><div class="rip-edge"></div></div>`;
+    envStack.appendChild(card);
+  }
+}
+
+function getTopCard() {
+  return envStack.querySelector(`.env-card[data-idx="${eIdx}"]`);
+}
+
+/* ==========================================================
+   5) BORÍTÉK BÖNGÉSZÉS
+   ========================================================== */
+function showEntry() {
+  if (eIdx >= ENTRIES.length) { showClosing(); return; }
+  if (CHAPTERS[eIdx] && !shownChapters.has(eIdx)) {
+    shownChapters.add(eIdx);
+    showChapter(CHAPTERS[eIdx]);
+    return;
+  }
+
+  picked = false;
+  pIdx = 0;
+  contentArea.classList.remove('show');
+  nextEnvBtn.classList.remove('show');
+  nextEnvBtn.style.display = 'none';
+
+  buildStack();
+  const card = getTopCard();
+  if (!card) return;
+  attachPickHandler(card);
+}
+
+function attachPickHandler(card) {
+  const pickHandler = () => {
+    if (picked) return;
+    picked = true;
+    card.removeEventListener('click', pickHandler);
+    card.classList.add('picked');
+    // vibráció a felemelésnél (ha támogatott)
+    if (navigator.vibrate) navigator.vibrate(15);
+    setTimeout(() => {
+      const tearHandler = () => {
+        card.removeEventListener('click', tearHandler);
+        card.classList.add('tearing');
+        if (navigator.vibrate) navigator.vibrate([20, 40, 20]);
+        setTimeout(() => {
+          card.classList.add('torn');
+          setTimeout(() => revealContent(), 400);
+        }, 500);
+      };
+      card.addEventListener('click', tearHandler);
+    }, 100);
+  };
+  card.addEventListener('click', pickHandler);
+}
+
+function revealContent() {
+  const entry = ENTRIES[eIdx];
+  fTitle.textContent = `AKTA ${String(eIdx + 1).padStart(2, '0')} \u2014 ${entry.title}`;
+  fText.textContent = entry.note;
+  envStack.classList.add('docked');
+  pIdx = 0;
+  showPhoto();
+  contentArea.classList.add('show');
+}
+
+/* ==========================================================
+   FOTÓNAVIGÁCIÓ — koppintás a kép jobb/bal oldalára
+   ========================================================== */
+function showPhoto(dir) {
+  const entry = ENTRIES[eIdx];
+  const num = String(pIdx + 1); /* 1.jpg, 2.jpg — nincs nulla-padding */
+  const totalItems = entry.count + (entry.video ? 1 : 0);
+  const isVideo = entry.video && pIdx === entry.count; /* videó = utolsó elem */
+
+  if (isVideo) {
+    photoImg.style.display = 'none';
+    photoMissing.style.display = 'none';
+    let vid = photoFrame.querySelector('video.inline-vid');
+    if (!vid) {
+      vid = document.createElement('video');
+      vid.className = 'inline-vid';
+      vid.controls = true;
+      vid.playsInline = true;
+      vid.preload = 'metadata';
+      vid.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:4px;';
+      photoFrame.insertBefore(vid, photoFrame.firstChild);
+    }
+    vid.src = `assets/${entry.slug}/${entry.video}`;
+    vid.style.display = 'block';
+  } else {
+    const vid = photoFrame.querySelector('video.inline-vid');
+    if (vid) vid.style.display = 'none';
+    photoImg.style.display = 'block';
+    photoMissing.style.display = 'none';
+    photoImg.onerror = () => {
+      photoImg.style.display = 'none';
+      photoMissing.style.display = 'flex';
+      photoMissing.textContent = `${entry.slug}/${num}.jpg`;
+    };
+    photoImg.src = `assets/${entry.slug}/${num}.jpg`;
+  }
+  photoCounter.textContent = totalItems > 1 ? `${pIdx + 1} / ${totalItems}` : '';
+  photoFrame.style.setProperty('--pr', sRot(eIdx * 100 + pIdx) + 'deg');
+
+  if (dir) {
+    photoFrame.classList.remove('slide-left', 'slide-right');
+    void photoFrame.offsetWidth;
+    photoFrame.classList.add(dir === 'right' ? 'slide-left' : 'slide-right');
+  }
+
+  const isLast = entry.video ? pIdx === entry.count : pIdx === entry.count - 1;
+  if (isLast) {
+    setTimeout(() => { nextEnvBtn.style.display = 'block'; nextEnvBtn.classList.add('show'); }, 300);
+  } else {
+    nextEnvBtn.classList.remove('show');
+    nextEnvBtn.style.display = 'none';
+  }
+}
+
+tapRight.addEventListener('click', e => {
+  e.stopPropagation();
+  if (phase !== 'browsing' && phase !== 'gallery') return;
+  const maxIdx = ENTRIES[eIdx].count - 1 + (ENTRIES[eIdx].video ? 1 : 0);
+  if (pIdx < maxIdx) { pIdx++; showPhoto('right'); }
+});
+tapLeft.addEventListener('click', e => {
+  e.stopPropagation();
+  if (phase !== 'browsing' && phase !== 'gallery') return;
+  if (pIdx > 0) { pIdx--; showPhoto('left'); }
+});
+
+/* Koppintás a fotó közepére → lightbox */
+photoFrame.addEventListener('click', e => {
+  if (e.target === tapLeft || e.target === tapRight) return;
+  if (photoImg.src && photoImg.style.display !== 'none') {
+    lbImg.src = photoImg.src;
+    lightbox.classList.add('show');
+  }
+});
+
+/* ==========================================================
+   KÖVETKEZŐ BORÍTÉK — leteszi az aktuálist, szétszórja
+   ========================================================== */
+let discardCount = 0;
+/* Szív alakú elrendezés — parametrikus szívgörbe alapján, 23 pozíció
+   A sorrend úgy van, hogy felváltva bal-jobb oldalra kerülnek,
+   így a szív fokozatosan rajzolódik ki mindkét oldalon egyszerre. */
+const discardPositions = [
+  /* 1. alsó csúcs */
+  {l:'40%',t:'72%'},
+  /* 2–3. alsó konvergencia */
+  {l:'33%',t:'65%'},{l:'47%',t:'65%'},
+  /* 4–5. alsó ívek */
+  {l:'25%',t:'57%'},{l:'55%',t:'57%'},
+  /* 6–7. középső ívek */
+  {l:'17%',t:'48%'},{l:'63%',t:'48%'},
+  /* 8–9. felső ívek */
+  {l:'13%',t:'39%'},{l:'67%',t:'39%'},
+  /* 10–11. púp emelkedés */
+  {l:'15%',t:'31%'},{l:'65%',t:'31%'},
+  /* 12–13. púp teteje */
+  {l:'21%',t:'25%'},{l:'59%',t:'25%'},
+  /* 14–15. púp belseje */
+  {l:'29%',t:'23%'},{l:'51%',t:'23%'},
+  /* 16–17. felső közép felé */
+  {l:'36%',t:'27%'},{l:'44%',t:'27%'},
+  /* 18. völgy (felső közép) */
+  {l:'40%',t:'33%'},
+  /* 19–20. kitöltés */
+  {l:'30%',t:'42%'},{l:'50%',t:'42%'},
+  /* 21–22. belső kitöltés */
+  {l:'35%',t:'52%'},{l:'45%',t:'52%'},
+  /* 23. szív közepe */
+  {l:'40%',t:'44%'},
+];
+
+function addDiscard(entryIdx) {
+  const d = document.createElement('div');
+  d.className = 'disc';
+  const p = discardPositions[discardCount % discardPositions.length];
+  d.style.left = p.l;
+  d.style.top = p.t;
+  d.style.transform = `rotate(${(sRot(discardCount + 50) * 0.4).toFixed(1)}deg)`;
+  d.textContent = ENTRIES[entryIdx].title;
+  d.dataset.entryIdx = entryIdx;
+  d.addEventListener('click', () => openFromDesk(entryIdx));
+  desk.appendChild(d);
+  discardCount++;
+  requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('land')));
+  /* Ha az összes boríték lent van, megjelenik a karcolt üzenet a szív közepén */
+  if (discardCount >= ENTRIES.length) {
+    setTimeout(() => { const c = $('deskCarve'); if (c) c.classList.add('visible'); }, 600);
+  }
+}
+
+nextEnvBtn.addEventListener('click', () => {
+  if (phase !== 'browsing' && phase !== 'gallery') return;
+  contentArea.classList.remove('show');
+  const card = getTopCard();
+  if (card) {
+    card.classList.remove('picked', 'tearing');
+    card.classList.add('discarded');
+    addDiscard(eIdx);
+    setTimeout(() => card.remove(), 500);
+  }
+  envStack.classList.remove('docked');
+  eIdx++;
+  setTimeout(() => showEntry(), 400);
+});
+
+/* ==========================================================
+   LETESZEM — kilépés a nézegetésből, visszatérés az asztalra
+   ========================================================== */
+putDownBtn.addEventListener('click', () => {
+  if (phase !== 'browsing' && phase !== 'gallery') return;
+  putDown();
+});
+
+function putDown() {
+  contentArea.classList.remove('show');
+  nextEnvBtn.classList.remove('show');
+  nextEnvBtn.style.display = 'none';
+  picked = false;
+
+  // ha asztalról nyitottuk, visszaállítjuk a kupac-pozíciót
+  if (savedStackIdx !== null) {
+    eIdx = savedStackIdx;
+    savedStackIdx = null;
+  }
+
+  const card = getTopCard();
+  if (card) {
+    card.classList.remove('picked', 'tearing', 'torn');
+    attachPickHandler(card);
+  }
+  envStack.classList.remove('docked');
+}
+
+/* ==========================================================
+   ASZTALRÓL ÚJRANYITÁS — megnézett boríték koppintása
+   ========================================================== */
+let savedStackIdx = null; // megjegyzi a kupac-pozíciót, ha asztalról nyitunk
+
+function openFromDesk(entryIdx) {
+  if (phase !== 'browsing' && phase !== 'gallery') return;
+  contentArea.classList.remove('show');
+  envStack.classList.remove('docked');
+
+  savedStackIdx = eIdx; // megjegyezzük, hol tartottunk
+  const entry = ENTRIES[entryIdx];
+  eIdx = entryIdx;
+  pIdx = 0;
+  fTitle.textContent = `AKTA ${String(entryIdx + 1).padStart(2, '0')} \u2014 ${entry.title}`;
+  fText.textContent = entry.note;
+  showPhoto();
+  nextEnvBtn.classList.remove('show');
+  nextEnvBtn.style.display = 'none';
+  envStack.classList.add('docked');
+  setTimeout(() => contentArea.classList.add('show'), 150);
+}
+
+/* ==========================================================
+   FEJEZET-ELVÁLASZTÓ
+   ========================================================== */
+function showChapter(ch) {
+  phase = 'chapter';
+  chRoman.textContent = `AKTA ${ch.r} RÉSZ`;
+  chTitle.textContent = ch.t;
+  chTeaser.textContent = ch.s;
+  chapterOverlay.classList.add('show');
+}
+chapterOverlay.addEventListener('click', () => {
+  if (phase !== 'chapter') return;
+  chapterOverlay.classList.remove('show');
+  phase = 'browsing';
+  showEntry();
+});
+
+/* ==========================================================
+   ZÁRÓ LAP + KONFETTI + SZERELMES LEVÉL
+   ========================================================== */
+function spawnConfetti() {
+  const wrap = $('confettiWrap');
+  wrap.innerHTML = '';
+  const colors = ['#a3272b','#c8a44a','#b99b6b','#dccca0','#7c1c1f','#e8dcc0'];
+  for (let i = 0; i < 35; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = (Math.random() * 100) + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--dur', (2.5 + Math.random() * 2) + 's');
+    p.style.setProperty('--delay', (Math.random() * 1.5) + 's');
+    p.style.setProperty('--drift', (Math.random() * 40 - 20) + 'px');
+    p.style.width = (6 + Math.random() * 6) + 'px';
+    p.style.height = (8 + Math.random() * 8) + 'px';
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '1px';
+    wrap.appendChild(p);
+  }
+}
+
+const loveLetter = $('loveLetter');
+const bonusSection = $('bonusSection');
+
+function showClosing() {
+  phase = 'closing';
+  contentArea.classList.remove('show');
+  envStack.classList.remove('docked');
+  const now = new Date();
+  const months = ['január','február','március','április','május','június','július','augusztus','szeptember','október','november','december'];
+  $('closingDate').textContent = `${now.getFullYear()}. ${months[now.getMonth()]} ${now.getDate()}. \u2014 a Nudelenciklop\u00e9dia lez\u00e1r\u00e1s\u00e1nak napja`;
+  closingCard.classList.add('show');
+  spawnConfetti();
+  closingCard.addEventListener('click', showBonus, { once: true });
+}
+
+function showBonus() {
+  closingCard.classList.remove('show');
+  phase = 'bonus';
+  setTimeout(() => bonusSection.classList.add('show'), 300);
+  bonusSection.addEventListener('click', function handler(e) {
+    if (e.target.tagName === 'VIDEO' || e.target.tagName === 'IMG') return;
+    bonusSection.removeEventListener('click', handler);
+    bonusSection.classList.remove('show');
+    showLoveLetter();
+  });
+}
+
+function showLoveLetter() {
+  phase = 'loveletter';
+  setTimeout(() => loveLetter.classList.add('show'), 300);
+  loveLetter.addEventListener('click', enterGallery, { once: true });
+}
+
+/* ==========================================================
+   GALÉRIA MÓD → "Láda visszazárása" gomb
+   A szerelmes levél után nem indul újra a boríték-téma,
+   hanem egy gomb jelenik meg, ami visszavisz a zárt dobozhoz.
+   ========================================================== */
+function enterGallery() {
+  phase = 'gallery';
+  closingCard.classList.remove('show');
+  loveLetter.classList.remove('show');
+  bonusSection.classList.remove('show');
+  envStack.classList.remove('visible');
+  envStack.classList.remove('docked');
+
+  /* "Láda visszazárása" gomb megjelenítése */
+  let relockBtn = $('relockBtn');
+  if (!relockBtn) {
+    relockBtn = document.createElement('div');
+    relockBtn.id = 'relockBtn';
+    relockBtn.className = 'sf';
+    relockBtn.innerHTML = '🔒 Láda visszazárása';
+    relockBtn.style.cssText = `
+      position:absolute; bottom:14%; left:50%; transform:translateX(-50%);
+      z-index:35; background:rgba(20,16,12,.88); color:#c8a44a;
+      font-size:11px; letter-spacing:1px; padding:10px 22px;
+      border:1px solid rgba(200,164,74,.4); border-radius:4px;
+      cursor:pointer; text-transform:uppercase;
+      box-shadow:0 8px 20px rgba(0,0,0,.4);
+      opacity:0; transition: opacity .5s;
+    `;
+    desk.appendChild(relockBtn);
+    requestAnimationFrame(() => requestAnimationFrame(() => relockBtn.style.opacity = '1'));
+
+    relockBtn.addEventListener('click', () => {
+      localStorage.removeItem('nudel_unlocked');
+      location.reload();
+    });
+
+    /* ▼▼▼ SZERKESZD: Instagram link — írd át a felhasználónevedre ▼▼▼ */
+    const instaLink = document.createElement('a');
+    instaLink.href = 'https://instagram.com/intellectualminutes';
+    instaLink.target = '_blank';
+    instaLink.rel = 'noopener';
+    instaLink.style.cssText = `
+      position:absolute; bottom:8%; left:50%; transform:translateX(-50%);
+      z-index:35; color:rgba(200,164,74,.5); font-size:10px;
+      font-family:'Special Elite',monospace; letter-spacing:1px;
+      text-decoration:none; opacity:0; transition:opacity .5s;
+    `;
+    instaLink.textContent = '📸 Katt ide, ha edukálódnál picit';
+    desk.appendChild(instaLink);
+    requestAnimationFrame(() => requestAnimationFrame(() => instaLink.style.opacity = '1'));
+    /* ▲▲▲ SZERKESZD ▲▲▲ */
+  }
+}
+
+/* ==========================================================
+   LIGHTBOX
+   ========================================================== */
+lbClose.addEventListener('click', () => lightbox.classList.remove('show'));
+lightbox.addEventListener('click', e => { if (e.target === lightbox) lightbox.classList.remove('show'); });
+</script>
+</body>
+</html>
