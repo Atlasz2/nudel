@@ -354,9 +354,7 @@ body {
 #photoFrame img {
   width: 100%; height: 100%; object-fit: cover;
   display: block; border-radius: 1px; background: var(--paper-dark);
-  transition: opacity .2s ease;
 }
-#photoFrame img.loading { opacity: .3; }
 #photoFrame .missing {
   position: absolute; inset: 6px 6px 22px;
   display: flex; align-items: center; justify-content: center;
@@ -1162,22 +1160,19 @@ function showPhoto(dir) {
     if (vid) vid.style.display = 'none';
     photoImg.style.display = 'block';
     photoMissing.style.display = 'none';
-    /* Fade: elhalványít → betölt → visszafade */
-    photoImg.classList.add('loading');
     const newSrc = `assets/${entry.slug}/${num}.jpg`;
-    const preload = new Image();
-    preload.onload = () => { photoImg.src = newSrc; photoImg.classList.remove('loading'); };
-    preload.onerror = () => {
-      photoImg.classList.remove('loading');
+    photoImg.onerror = () => {
       photoImg.style.display = 'none';
       photoMissing.style.display = 'flex';
       photoMissing.textContent = `${entry.slug}/${num}.jpg`;
     };
-    preload.src = newSrc;
-    /* Következő kép előtöltése háttérben */
-    if (pIdx + 1 < entry.count) {
-      const nx = new Image();
-      nx.src = `assets/${entry.slug}/${pIdx + 2}.jpg`;
+    photoImg.src = newSrc;
+    /* Következő 2 kép előtöltése háttérben */
+    for (let ahead = 1; ahead <= 2; ahead++) {
+      if (pIdx + ahead < entry.count) {
+        const nx = new Image();
+        nx.src = `assets/${entry.slug}/${pIdx + 1 + ahead}.jpg`;
+      }
     }
   }
   photoCounter.textContent = totalItems > 1 ? `${pIdx + 1} / ${totalItems}` : '';
