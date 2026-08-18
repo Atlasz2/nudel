@@ -1129,22 +1129,8 @@ function revealContent() {
   fText.textContent = entry.note;
   envStack.classList.add('docked');
   pIdx = 0;
-  /* Boríték kinyitásakor: ÖSSZES kép előtöltése háttérben */
-  preloadEntry(eIdx);
-  /* Következő boríték képeit is elkezdjük */
-  if (eIdx + 1 < ENTRIES.length) preloadEntry(eIdx + 1);
   showPhoto();
   contentArea.classList.add('show');
-}
-
-/* Egy teljes entry összes képét előtölti háttérben */
-function preloadEntry(idx) {
-  const e = ENTRIES[idx];
-  if (!e) return;
-  for (let i = 1; i <= e.count; i++) {
-    const img = new Image();
-    img.src = `assets/${e.slug}/${i}.jpg`;
-  }
 }
 
 /* ==========================================================
@@ -1188,6 +1174,11 @@ function showPhoto(dir) {
       photoMissing.textContent = `${entry.slug}/${num}.jpg`;
     };
     preload.src = newSrc;
+    /* Következő kép előtöltése háttérben */
+    if (pIdx + 1 < entry.count) {
+      const nx = new Image();
+      nx.src = `assets/${entry.slug}/${pIdx + 2}.jpg`;
+    }
   }
   photoCounter.textContent = totalItems > 1 ? `${pIdx + 1} / ${totalItems}` : '';
   photoFrame.style.setProperty('--pr', sRot(eIdx * 100 + pIdx) + 'deg');
