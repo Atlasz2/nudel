@@ -316,21 +316,24 @@ body {
    TARTALOM-ZÓNA (cetli + fotó)
    ========================================================== */
 #contentArea {
-  position: absolute; left: 50%; bottom: 6%;
+  position: absolute; left: 50%; bottom: 4%; top: 18%;
   transform: translateX(-50%);
   width: 84vw; max-width: 340px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
   z-index: 12; opacity: 0;
   transition: opacity .4s ease .1s; pointer-events: none;
 }
 #contentArea.show { opacity: 1; pointer-events: auto; }
 
-/* Szöveges fecni (ragasztócsíkkal) */
+/* Szöveges fecni (ragasztócsíkkal) — fix-en a tetején, görgethető ha hosszú */
 .fecni {
   background: var(--paper); border-radius: 2px;
   box-shadow: 0 8px 18px rgba(0,0,0,.45);
   padding: 10px 12px; width: 100%; position: relative;
   transform: rotate(-1.5deg);
+  flex-shrink: 0;
+  max-height: 25%; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .fecni::before {
   content: ""; position: absolute; top: -6px; left: 28%;
@@ -341,9 +344,9 @@ body {
 .fecni-title { font-family: 'Special Elite', monospace; font-size: 11px; color: var(--ink-soft); margin-bottom: 2px; }
 .fecni-text  { font-family: 'Caveat', cursive; font-size: 18px; line-height: 1.25; color: var(--stamp-red-dark); }
 
-/* Fotó megjelenítő (polaroid stílus) */
+/* Fotó megjelenítő (polaroid stílus) — kitölti a maradék helyet */
 #photoFrame {
-  position: relative; width: 100%; aspect-ratio: 4/3;
+  position: relative; width: 100%; flex: 1; min-height: 0;
   background: #fff; padding: 6px 6px 22px; border-radius: 2px;
   box-shadow: 0 12px 24px rgba(0,0,0,.45);
   transform: rotate(var(--pr, 1.2deg));
@@ -351,7 +354,9 @@ body {
 #photoFrame img {
   width: 100%; height: 100%; object-fit: cover;
   display: block; border-radius: 1px; background: var(--paper-dark);
+  transition: opacity .2s ease;
 }
+#photoFrame img.loading { opacity: .3; }
 #photoFrame .missing {
   position: absolute; inset: 6px 6px 22px;
   display: flex; align-items: center; justify-content: center;
@@ -1157,12 +1162,23 @@ function showPhoto(dir) {
     if (vid) vid.style.display = 'none';
     photoImg.style.display = 'block';
     photoMissing.style.display = 'none';
-    photoImg.onerror = () => {
+    /* Fade: elhalványít → betölt → visszafade */
+    photoImg.classList.add('loading');
+    const newSrc = `assets/${entry.slug}/${num}.jpg`;
+    const preload = new Image();
+    preload.onload = () => { photoImg.src = newSrc; photoImg.classList.remove('loading'); };
+    preload.onerror = () => {
+      photoImg.classList.remove('loading');
       photoImg.style.display = 'none';
       photoMissing.style.display = 'flex';
       photoMissing.textContent = `${entry.slug}/${num}.jpg`;
     };
-    photoImg.src = `assets/${entry.slug}/${num}.jpg`;
+    preload.src = newSrc;
+    /* Következő kép előtöltése háttérben */
+    if (pIdx + 1 < entry.count) {
+      const nx = new Image();
+      nx.src = `assets/${entry.slug}/${pIdx + 2}.jpg`;
+    }
   }
   photoCounter.textContent = totalItems > 1 ? `${pIdx + 1} / ${totalItems}` : '';
   photoFrame.style.setProperty('--pr', sRot(eIdx * 100 + pIdx) + 'deg');
